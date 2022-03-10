@@ -1,0 +1,16 @@
+#pragma once
+
+////////////////////////////////////////////////////////////////
+// Standard includes.
+////////////////////////////////////////////////////////////////
+
+#include <cstdint>
+
+namespace lal
+{
+    enum class Ordering : uint8_t
+    {
+        Disabled = 0,
+        Enabled  = 1
+    };
+}  // namespace lal
