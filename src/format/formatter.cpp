@@ -98,6 +98,9 @@ namespace lal
         const auto length = file.tellg();
         file.seekg(0);
 
+        // TODO: Skipping streamCount for now, but the writeLog could be improved by preallocating a vector of outputs instead of using a dict.
+        file.seekg(sizeof(size_t));
+
         // Read message order setting.
         bool messageOrder = false;
         {

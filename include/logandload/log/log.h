@@ -274,8 +274,6 @@ namespace lal
 
         log.file.close();
 
-        streams.streams.clear();
-
         // Write formats file.
         writeFormats();
 
@@ -448,6 +446,10 @@ namespace lal
         auto fmtFile = std::ofstream(fmtPath, std::ios::binary);
 
         if (!fmtFile) throw LalError(std::format("Failed to open format file {}", fmtPath.string()));
+
+        // Write number of streams.
+        auto streamCount = streams.streams.size();
+        fmtFile.write(reinterpret_cast<const char*>(&streamCount), sizeof(streamCount));
 
         // Write message order setting.
         fmtFile << (Order == Ordering::Enabled ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0));
