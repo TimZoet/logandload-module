@@ -1,4 +1,5 @@
 find_package(common REQUIRED)
+find_package(dot REQUIRED)
 
 include(logandloadVersionString)
 
@@ -8,6 +9,10 @@ set(INCLUDE_DIR "include/logandload")
 set(SRC_DIR "src")
 
 set(HEADERS
+    ${INCLUDE_DIR}/analyze/analyzer.h
+    ${INCLUDE_DIR}/analyze/format_type.h
+    ${INCLUDE_DIR}/analyze/node.h
+
     ${INCLUDE_DIR}/format/format_state.h
     ${INCLUDE_DIR}/format/formatter.h
     ${INCLUDE_DIR}/format/message_formatter.h
@@ -24,6 +29,10 @@ set(HEADERS
 )
 
 set(SOURCES
+	${SRC_DIR}/analyze/analyzer.cpp
+	${SRC_DIR}/analyze/format_type.cpp
+	${SRC_DIR}/analyze/node.cpp
+
 	${SRC_DIR}/format/format_state.cpp
 	${SRC_DIR}/format/formatter.cpp
 	${SRC_DIR}/format/message_formatter.cpp
@@ -37,6 +46,10 @@ set(DEPS_PUBLIC
 	common::common
 )
 
+set(DEPS_PRIVATE
+    dot::dot
+)
+
 make_target(
     NAME ${NAME}
     TYPE ${TYPE}
@@ -45,6 +58,7 @@ make_target(
     HEADERS "${HEADERS}"
     SOURCES "${SOURCES}"
     DEPS_PUBLIC "${DEPS_PUBLIC}"
+    DEPS_PRIVATE "${DEPS_PRIVATE}"
 )
 
 install_target(
