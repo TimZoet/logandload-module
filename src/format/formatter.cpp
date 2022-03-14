@@ -30,6 +30,7 @@ namespace lal
         registerParameter<uint32_t>([](std::ostream& out, const uint32_t val) { out << val; });
         registerParameter<int64_t>([](std::ostream& out, const int64_t val) { out << val; });
         registerParameter<uint64_t>([](std::ostream& out, const uint64_t val) { out << val; });
+        registerParameter<std::byte>([](std::ostream& out, const std::byte val) { out << static_cast<uint32_t>(val); });
         registerParameter<float>([](std::ostream& out, const float val) { out << val; });
         registerParameter<double>([](std::ostream& out, const double val) { out << val; });
         registerParameter<long double>([](std::ostream& out, const long double val) { out << val; });
