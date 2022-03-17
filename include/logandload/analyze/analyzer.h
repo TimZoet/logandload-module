@@ -19,6 +19,8 @@
 
 namespace lal
 {
+    class Tree;
+
     class Analyzer
     {
     public:
@@ -39,6 +41,12 @@ namespace lal
         Analyzer& operator=(Analyzer&&) = delete;
 
         ////////////////////////////////////////////////////////////////
+        // Getters.
+        ////////////////////////////////////////////////////////////////
+
+        [[nodiscard]] const std::vector<Node>& getNodes() const noexcept;
+
+        ////////////////////////////////////////////////////////////////
         // ...
         ////////////////////////////////////////////////////////////////
 
@@ -49,9 +57,13 @@ namespace lal
             if (!parameters.try_emplace(key, sizeof(T)).second) throw LalError("Parameter was already registered.");
         }
 
+        ////////////////////////////////////////////////////////////////
+        // ...
+        ////////////////////////////////////////////////////////////////
+
         bool read(const std::filesystem::path& path);
 
-        void writeGraph(const std::filesystem::path& path) const;
+        void writeGraph(const std::filesystem::path& path, const Tree* tree = nullptr) const;
 
     private:
         void readFormatFile(const std::filesystem::path& fmtPath);

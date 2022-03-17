@@ -8,8 +8,17 @@
 // Current target includes.
 ////////////////////////////////////////////////////////////////
 
+#include "logandload/analyze/analyzer.h"
 
 namespace lal
 {
+    ////////////////////////////////////////////////////////////////
+    // Getters.
+    ////////////////////////////////////////////////////////////////
+
+    size_t Node::getIndex(const Analyzer& analyzer) const noexcept
+    {
+        return std::distance(analyzer.getNodes().data(), this);
+    }
 
 }  // namespace lal

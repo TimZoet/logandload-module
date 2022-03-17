@@ -4,10 +4,13 @@
 // Current target includes.
 ////////////////////////////////////////////////////////////////
 
+#include "logandload/analyze/fmt_type.h"
 #include "logandload/log/format_type.h"
 
 namespace lal
 {
+    class Analyzer;
+
     struct Node
     {
         ////////////////////////////////////////////////////////////////
@@ -16,10 +19,10 @@ namespace lal
 
         enum class Type
         {
-            Log     = 0,
-            Stream  = 1,
-            Region  = 2,
-            Message = 3
+            Log     = 1,
+            Stream  = 2,
+            Region  = 4,
+            Message = 8
         };
 
         ////////////////////////////////////////////////////////////////
@@ -39,8 +42,10 @@ namespace lal
         Node& operator=(Node&&) = default;
 
         ////////////////////////////////////////////////////////////////
-        // ...
+        // Getters.
         ////////////////////////////////////////////////////////////////
+
+        [[nodiscard]] size_t getIndex(const Analyzer& analyzer) const noexcept;
 
         ////////////////////////////////////////////////////////////////
         // Member variables.
@@ -52,9 +57,9 @@ namespace lal
         Type type = Type::Log;
 
         /**
-         * \brief Message key. Only used by named regions and messages.
+         * \brief Format type.
          */
-        MessageKey key;
+        FormatType* formatType = nullptr;
 
         /**
          * \brief Unique ordered index. Only used by messages if message ordering was enabled.

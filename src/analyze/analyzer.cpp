@@ -13,12 +13,14 @@
 // Module includes.
 ////////////////////////////////////////////////////////////////
 
+#include "common/enum_classes.h"
 #include "dot/graph.h"
 
 ////////////////////////////////////////////////////////////////
 // Current target includes.
 ////////////////////////////////////////////////////////////////
 
+#include "logandload/analyze/tree.h"
 #include "logandload/utils/lal_error.h"
 
 namespace
@@ -50,12 +52,19 @@ namespace lal
         registerParameter<uint32_t>();
         registerParameter<int64_t>();
         registerParameter<uint64_t>();
+        registerParameter<std::byte>();
         registerParameter<float>();
         registerParameter<double>();
         registerParameter<long double>();
     }
 
     Analyzer::~Analyzer() noexcept = default;
+
+    ////////////////////////////////////////////////////////////////
+    // Getters.
+    ////////////////////////////////////////////////////////////////
+
+    const std::vector<Node>& Analyzer::getNodes() const noexcept { return nodes; }
 
     ////////////////////////////////////////////////////////////////
     // ...
@@ -106,8 +115,7 @@ namespace lal
             delete[] str;
 
             // Read category.
-            uint32_t category;
-            file.read(reinterpret_cast<char*>(&category), sizeof category);
+            file.read(reinterpret_cast<char*>(&formatType.category), sizeof formatType.category);
 
             // Read all parameter keys.
             for (size_t i = 0; i < countParameters(formatType.message); i++)
@@ -322,13 +330,14 @@ namespace lal
                     {
                         const auto& key2 = reinterpret_cast<MessageKey&>(*pos);
                         pos += sizeof key2;
-                        assert(formatTypes.contains(key2));
+                        const auto it = formatTypes.find(key2);
+                        assert(it != formatTypes.end());
 
                         // Initialize named region node at next position in child node range of parent.
-                        auto& node  = *(parentNode->firstChild + parentNode->childCount++);
-                        node.type   = Node::Type::Region;
-                        node.key    = key2;
-                        node.parent = parentNode;
+                        auto& node      = *(parentNode->firstChild + parentNode->childCount++);
+                        node.type       = Node::Type::Region;
+                        node.formatType = &it->second;
+                        node.parent     = parentNode;
 
                         // Assign offset to first child.
                         if (const auto& groupNode = groupNodes[nextGroupIndex++];
@@ -350,10 +359,13 @@ namespace lal
                     }
                     else
                     {
+                        const auto it = formatTypes.find(key);
+                        assert(it != formatTypes.end());
+
                         // Initialize message node at next position in child node range of parent.
-                        auto& node = *(parentNode->firstChild + parentNode->childCount++);
-                        node.type  = Node::Type::Message;
-                        node.key   = key;
+                        auto& node      = *(parentNode->firstChild + parentNode->childCount++);
+                        node.type       = Node::Type::Message;
+                        node.formatType = &it->second;
                         if (messageOrder)
                         {
                             node.index = reinterpret_cast<size_t&>(*pos);
@@ -361,8 +373,7 @@ namespace lal
                         }
                         node.parent = parentNode;
 
-                        const auto it = formatTypes.find(key);
-                        assert(it != formatTypes.end());
+
 
                         // Assign parameter data.
                         const auto size = it->second.messageSize;
@@ -380,29 +391,48 @@ namespace lal
         }
     }
 
-    void Analyzer::writeGraph(const std::filesystem::path& path) const
+    void Analyzer::writeGraph(const std::filesystem::path& path, const Tree* tree) const
     {
         dot::Graph graph;
 
         std::function<void(dot::Node&, const Node&)> func;
         func = [&](dot::Node& parent, const Node& node) {
+            const auto index = node.getIndex(*this);
+
+            //if (tree && !any(tree->getNodes()[index] & Tree::Flags::Enabled))
+            //    return;
+
             auto& childNode = graph.createNode();
+
             graph.createEdge(parent, childNode);
+
+            if (tree && !any(tree->getNodes()[index] & Tree::Flags::Enabled))
+            {
+                childNode.attributes["style"]     = "filled";
+                childNode.attributes["fillcolor"] = "red";
+                return;
+            }
 
             if (node.type == Node::Type::Stream)
             {
                 childNode.setLabel("Stream");
+
+                // Traverse children.
                 for (size_t i = 0; i < node.childCount; i++) func(childNode, *(node.firstChild + i));
             }
             else if (node.type == Node::Type::Region)
             {
-                childNode.setLabel("Region");
+                if (node.formatType && !node.formatType->message.empty())
+                    childNode.setLabel(node.formatType->message);
+                else
+                    childNode.setLabel("Region");
+
+                // Traverse children.
                 for (size_t i = 0; i < node.childCount; i++) { func(childNode, *(node.firstChild + i)); }
             }
             else
             {
-                const auto it = formatTypes.find(node.key);
-                childNode.setLabel(it->second.message);
+                childNode.setLabel(node.formatType->message);
             }
         };
 
