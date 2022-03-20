@@ -66,6 +66,8 @@ namespace lal
 
     const std::vector<Node>& Analyzer::getNodes() const noexcept { return nodes; }
 
+    size_t Analyzer::getStreamCount() const noexcept { return nodes[0].childCount; }
+
     ////////////////////////////////////////////////////////////////
     // ...
     ////////////////////////////////////////////////////////////////

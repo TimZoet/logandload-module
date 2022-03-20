@@ -59,6 +59,12 @@ namespace lal
         ////////////////////////////////////////////////////////////////
 
         /**
+         * \brief Filter stream nodes.
+         * \param f Function to apply to stream nodes. First parameter is old flags. Second parameter is stream node. Third parameter is stream index. Returns new flags.
+         */
+        void filterStream(std::function<Flags(Flags, const Node&, size_t)> f);
+
+        /**
          * \brief Filter message nodes by category.
          * \param f Function to apply to message nodes. First parameter is old flags. Second parameter is category. Returns new flags.
          */
@@ -107,6 +113,8 @@ namespace lal
         Tree& operator&=(const Tree& rhs);
 
     private:
+        void traverse(std::function<Flags(Flags, const Node&)> f);
+
         void convolution(const std::function<void(const Node&, int32_t, size_t, std::vector<Flags>& newFlags)>& f);
 
         ////////////////////////////////////////////////////////////////

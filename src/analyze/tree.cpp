@@ -63,70 +63,30 @@ namespace lal
     // Filtering.
     ////////////////////////////////////////////////////////////////
 
+    void Tree::filterStream(std::function<Flags(Flags, const Node&, size_t)> f)
+    {
+        const auto& logNode = analyzer->getNodes().front();
+        for (size_t i = 0; i < logNode.childCount; i++) nodes[i + 1] = f(nodes[i + 1], *(logNode.firstChild + i), i);
+    }
+
     void Tree::filterCategory(std::function<Flags(Flags, uint32_t)> f)
     {
-        const Node* activeNode   = &analyzer->getNodes()[0];
-        const Node* previousNode = nullptr;
-
-        while (activeNode)
-        {
-            // Came here from child. Traverse to next child or to parent if no children left.
-            if (previousNode)
-            {
-                // Traverse to next child.
-                const auto nextChildIndex = getNodeIndex(*previousNode, *activeNode) + 1;
-                if (nextChildIndex < activeNode->childCount)
-                {
-                    activeNode   = activeNode->firstChild + nextChildIndex;
-                    previousNode = nullptr;
-                    continue;
-                }
-
-                // Traverse to parent.
-                previousNode = activeNode;
-                activeNode   = activeNode->parent;
-                continue;
-            }
-
-            const auto index = activeNode->getIndex(*analyzer);
-            const auto flag  = nodes[index];
-
-            // Terminate, traverse back to parent.
-            if (none(flag & Flags::Enabled))
-            {
-                previousNode = activeNode;
-                activeNode   = activeNode->parent;
-                continue;
-            }
-
-            // Apply function to message node.
-            if (activeNode->type == Node::Type::Message)
-            {
-                // Apply.
-                nodes[index] = f(flag, analyzer->getNodes()[index].formatType->category);
-
-                // Traverse back to parent.
-                previousNode = activeNode;
-                activeNode   = activeNode->parent;
-                continue;
-            }
-
-            // Traverse to first child.
-            if (activeNode->childCount)
-            {
-                previousNode = nullptr;
-                activeNode   = activeNode->firstChild;
-                continue;
-            }
-
-            // Traverse back to parent.
-            previousNode = activeNode;
-            activeNode   = activeNode->parent;
-        }
+        traverse([&](const Flags oldFlags, const Node& node) {
+            if (node.type == Node::Type::Message) return f(oldFlags, node.formatType->category);
+            return oldFlags;
+        });
     }
 
     void Tree::filterRegion(std::function<Flags(Flags, const Node&)> f)
     {
+        traverse([&](const Flags oldFlags, const Node& node) {
+            if (node.type == Node::Type::Region) return f(oldFlags, node);
+            return oldFlags;
+        });
+    }
+
+    void Tree::traverse(std::function<Flags(Flags, const Node&)> f)
+    {
         const Node* activeNode   = &analyzer->getNodes()[0];
         const Node* previousNode = nullptr;
 
@@ -161,12 +121,8 @@ namespace lal
                 continue;
             }
 
-            // Apply function to message node.
-            if (activeNode->type == Node::Type::Region)
-            {
-                // Apply.
-                nodes[index] = f(flag, analyzer->getNodes()[index]);
-            }
+            // Apply function.
+            nodes[index] = f(flag, analyzer->getNodes()[index]);
 
             // Traverse to first child.
             if (activeNode->childCount)

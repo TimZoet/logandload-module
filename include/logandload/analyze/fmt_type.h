@@ -38,6 +38,12 @@ namespace lal
         // ...
         ////////////////////////////////////////////////////////////////
 
+        template<typename F>
+        requires(has_message<F>&& has_category<F>) [[nodiscard]] bool matches() const noexcept
+        {
+            return message == F::template message && category == F::template category;
+        }
+
         ////////////////////////////////////////////////////////////////
         // Member variables.
         ////////////////////////////////////////////////////////////////

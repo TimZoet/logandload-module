@@ -46,6 +46,8 @@ namespace lal
 
         [[nodiscard]] const std::vector<Node>& getNodes() const noexcept;
 
+        [[nodiscard]] size_t getStreamCount() const noexcept;
+
         ////////////////////////////////////////////////////////////////
         // ...
         ////////////////////////////////////////////////////////////////
