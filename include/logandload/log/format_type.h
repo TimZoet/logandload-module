@@ -48,7 +48,7 @@ namespace lal
      * \param s Value.
      * \return Hash.
      */
-    [[nodiscard]] consteval uint32_t hash(const uint32_t& s) noexcept
+    [[nodiscard]] constexpr uint32_t hash(const uint32_t& s) noexcept
     {
         const auto a = s ^ 61 ^ s >> 16;
         const auto b = a * 9;
@@ -125,6 +125,13 @@ namespace lal
 
         return value;
     }
+
+    /**
+     * \brief Hash a string.
+     * \param str String.
+     * \return Hash.
+     */
+    uint32_t hashMessage(const std::string& str);
 
     /**
      * \brief Hash a std::source_location.

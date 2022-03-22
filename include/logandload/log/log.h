@@ -44,11 +44,15 @@ namespace lal
         // Types.
         ////////////////////////////////////////////////////////////////
 
-        using type_list_t   = std::vector<ParameterKey>;
-        using format_elem_t = std::tuple<std::string, uint32_t, type_list_t>;  // <message, category, typelist>
-        using format_map_t  = std::unordered_map<MessageKey, format_elem_t>;
-        using stream_t      = Stream<C, Order>;
-        using category_t    = C;
+        struct FormatType
+        {
+            std::string               message;
+            uint32_t                  category = 0;
+            std::vector<ParameterKey> parameters;
+        };
+
+        using stream_t   = Stream<C, Order>;
+        using category_t = C;
         friend stream_t;
 
         ////////////////////////////////////////////////////////////////
@@ -134,7 +138,7 @@ namespace lal
             /**
              * \brief List of registered formats.
              */
-            format_map_t formats;
+            std::unordered_map<MessageKey, FormatType> formats;
 
             /**
              * \brief Mutex for formats.
@@ -413,10 +417,10 @@ namespace lal
             std::scoped_lock lock(log.mutex);
 
             // Hash types.
-            type_list_t types = {hashParameter<Ts>()...};
+            decltype(FormatType::parameters) types = {hashParameter<Ts>()...};
 
             // Store format and type information.
-            log.formats[key] = std::make_tuple(std::string(F::message), F::category, std::move(types));
+            log.formats.try_emplace(key, std::string(F::message), F::category, std::move(types));
         }
     }
 
@@ -430,10 +434,10 @@ namespace lal
         {
             std::scoped_lock lock(log.mutex);
 
-            type_list_t types = {};
+            decltype(FormatType::parameters) types = {};
 
-            log.formats[K] = std::make_tuple(
-              std::string(loc.file_name()) + std::format("({},{})", loc.line(), loc.column()), 0, types);
+            log.formats.try_emplace(
+              K, std::string(loc.file_name()) + std::format("({},{})", loc.line(), loc.column()), 0, types);
         }
     }
 
@@ -461,17 +465,16 @@ namespace lal
             fmtFile.write(reinterpret_cast<const char*>(&key), sizeof MessageKey);
 
             // Write format string.
-            const auto length = std::get<0>(format).size() + 1;
+            const auto length = format.message.size() + 1;
             fmtFile.write(reinterpret_cast<const char*>(&length), sizeof length);
-            fmtFile.write(std::get<0>(format).c_str(), length);
+            fmtFile.write(format.message.c_str(), length);
 
             // Write category.
-            const auto category = std::get<1>(format);
-            fmtFile.write(reinterpret_cast<const char*>(&category), sizeof category);
+            fmtFile.write(reinterpret_cast<const char*>(&format.category), sizeof format.category);
 
-            // Write type information.
-            for (const auto t : std::get<2>(format))
-                fmtFile.write(reinterpret_cast<const char*>(&t), sizeof ParameterKey);
+            // Write parameter information.
+            for (const auto p : format.parameters)
+                fmtFile.write(reinterpret_cast<const char*>(&p), sizeof ParameterKey);
         }
     }
 }  // namespace lal

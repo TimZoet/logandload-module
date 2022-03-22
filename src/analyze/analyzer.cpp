@@ -116,6 +116,9 @@ namespace lal
             formatType.message = std::string(str);
             delete[] str;
 
+            // Calculate message hash.
+            formatType.messageHash = MessageKey{hashMessage(formatType.message)};
+
             // Read category.
             file.read(reinterpret_cast<char*>(&formatType.category), sizeof formatType.category);
 

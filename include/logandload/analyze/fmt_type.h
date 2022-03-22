@@ -50,6 +50,8 @@ namespace lal
 
         MessageKey key;
 
+        MessageKey messageHash;
+
         std::string message;
 
         uint32_t category = 0;
