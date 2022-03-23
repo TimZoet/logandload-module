@@ -161,6 +161,12 @@ namespace lal
         //return ParameterKey{hash(loc)};
     }
 
+    template<>
+    [[nodiscard]] constexpr ParameterKey hashParameter<std::nullptr_t>() noexcept
+    {
+        return ParameterKey{0};
+    }
+
     /**
      * \brief Counts the number of dynamic parameters in the given string. Each occurrence of '{}' indicates a parameter.
      * \tparam N String length.

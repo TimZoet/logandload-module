@@ -6,6 +6,7 @@
 
 #include "logandload/analyze/fmt_type.h"
 #include "logandload/log/format_type.h"
+#include "logandload/utils/lal_error.h"
 
 namespace lal
 {
@@ -29,23 +30,55 @@ namespace lal
         // Constructors.
         ////////////////////////////////////////////////////////////////
 
-        Node() = default;
+        Node();
 
         Node(const Node&) = delete;
 
-        Node(Node&&) = default;
+        Node(Node&&);
 
-        ~Node() noexcept = default;
+        ~Node() noexcept;
 
         Node& operator=(const Node&) = delete;
 
-        Node& operator=(Node&&) = default;
+        Node& operator=(Node&&);
 
         ////////////////////////////////////////////////////////////////
         // Getters.
         ////////////////////////////////////////////////////////////////
 
         [[nodiscard]] size_t getIndex(const Analyzer& analyzer) const noexcept;
+
+        /**
+         * \brief Returns whether this node holds a parameter of the given type at the given index.
+         * \tparam T Parameter.
+         * \param index Parameter index.
+         * \return True or false.
+         */
+        template<typename T>
+        [[nodiscard]] bool has(const size_t index) const
+        {
+            static constexpr auto key = hashParameter<T>();
+            if (index >= formatType->parameters.size()) throw LalError("Parameter index is out of range.");
+            return formatType->parameters[index] == key;
+        }
+
+        /**
+         * \brief Get the value of a parameter. Node should have a parameter of the given type at the given index.
+         * \tparam T Parameter type.
+         * \param index Parameter index.
+         * \return Value.
+         */
+        template<typename T>
+        [[nodiscard]] const T& get(const size_t index) const
+        {
+            if (!has<T>(index)) throw LalError("Parameter type does not match.");
+
+            // Sum size of preceding parameters.
+            size_t offset = 0;
+            for (size_t i = 0; i < index; i++) offset += formatType->parameterSize[i];
+
+            return *reinterpret_cast<const T*>(data + offset);
+        }
 
         ////////////////////////////////////////////////////////////////
         // Member variables.

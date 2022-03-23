@@ -133,6 +133,7 @@ namespace lal
                     throw LalError(std::format("Encountered unregistered parameter {} in format file.", paramKey.key));
 
                 formatType.parameters.emplace_back(paramKey);
+                formatType.parameterSize.emplace_back(it->second);
                 formatType.messageSize += it->second;
             }
 
@@ -377,8 +378,6 @@ namespace lal
                             pos += static_cast<int64_t>(sizeof(uint64_t));
                         }
                         node.parent = parentNode;
-
-
 
                         // Assign parameter data.
                         const auto size = it->second.messageSize;

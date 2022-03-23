@@ -85,6 +85,19 @@ namespace lal
         });
     }
 
+    void Tree::filterMessageImpl(const MessageKey                         messageHash,
+                                 const uint32_t                           category,
+                                 const std::vector<ParameterKey>          params,
+                                 std::function<Flags(Flags, const Node&)> f)
+    {
+        traverse([&](const Flags oldFlags, const Node& node) {
+            if (node.type == Node::Type::Message && node.formatType->category == category &&
+                node.formatType->messageHash == messageHash && node.formatType->matches(params))
+                return f(oldFlags, node);
+            return oldFlags;
+        });
+    }
+
     void Tree::traverse(std::function<Flags(Flags, const Node&)> f)
     {
         const Node* activeNode   = &analyzer->getNodes()[0];

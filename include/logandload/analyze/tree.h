@@ -76,6 +76,20 @@ namespace lal
          */
         void filterRegion(std::function<Flags(Flags, const Node&)> f);
 
+        /**
+         * \brief Filter message nodes that match combination of format type and parameter types.
+         * \tparam F Format type.
+         * \tparam Ts Parameter types. std::nullptr_t will match any type.
+         * \param f Function to apply to message nodes. First parameter is old flags. Second parameter is message node. Returns new flags.
+         */
+        template<typename F, typename... Ts>
+        requires(is_format_type<F, Ts...>) void filterMessage(std::function<Flags(Flags, const Node&)> f)
+        {
+            const auto                messageHash = MessageKey{hashMessage(std::string(F::message))};
+            std::vector<ParameterKey> params      = {hashParameter<Ts>()...};
+            filterMessageImpl(messageHash, F::category, std::move(params), f);
+        }
+
         ////////////////////////////////////////////////////////////////
         // Expand/Reduce.
         ////////////////////////////////////////////////////////////////
@@ -113,6 +127,11 @@ namespace lal
         Tree& operator&=(const Tree& rhs);
 
     private:
+        void filterMessageImpl(MessageKey                               messageHash,
+                               uint32_t                                 category,
+                               std::vector<ParameterKey>                params,
+                               std::function<Flags(Flags, const Node&)> f);
+
         void traverse(std::function<Flags(Flags, const Node&)> f);
 
         void convolution(const std::function<void(const Node&, int32_t, size_t, std::vector<Flags>& newFlags)>& f);
