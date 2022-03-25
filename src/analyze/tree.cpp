@@ -13,15 +13,6 @@
 #include "logandload/analyze/analyzer.h"
 #include "logandload/utils/lal_error.h"
 
-// TODO: Move to common library.
-template<typename Enum>
-requires std::is_enum_v<Enum>
-constexpr Enum operator~(const Enum lhs)
-{
-    using t = std::underlying_type_t<Enum>;
-    return static_cast<Enum>(~static_cast<t>(lhs));
-}
-
 namespace
 {
     /**
@@ -63,13 +54,13 @@ namespace lal
     // Filtering.
     ////////////////////////////////////////////////////////////////
 
-    void Tree::filterStream(std::function<Flags(Flags, const Node&, size_t)> f)
+    void Tree::filterStream(const std::function<Flags(Flags, const Node&, size_t)>& f)
     {
         const auto& logNode = analyzer->getNodes().front();
         for (size_t i = 0; i < logNode.childCount; i++) nodes[i + 1] = f(nodes[i + 1], *(logNode.firstChild + i), i);
     }
 
-    void Tree::filterCategory(std::function<Flags(Flags, uint32_t)> f)
+    void Tree::filterCategory(const std::function<Flags(Flags, uint32_t)>& f)
     {
         traverse([&](const Flags oldFlags, const Node& node) {
             if (node.type == Node::Type::Message) return f(oldFlags, node.formatType->category);
@@ -77,7 +68,7 @@ namespace lal
         });
     }
 
-    void Tree::filterRegion(std::function<Flags(Flags, const Node&)> f)
+    void Tree::filterRegion(const std::function<Flags(Flags, const Node&)>& f)
     {
         traverse([&](const Flags oldFlags, const Node& node) {
             if (node.type == Node::Type::Region) return f(oldFlags, node);
@@ -85,10 +76,10 @@ namespace lal
         });
     }
 
-    void Tree::filterMessageImpl(const MessageKey                         messageHash,
-                                 const uint32_t                           category,
-                                 const std::vector<ParameterKey>          params,
-                                 std::function<Flags(Flags, const Node&)> f)
+    void Tree::filterMessageImpl(const MessageKey                                messageHash,
+                                 const uint32_t                                  category,
+                                 const std::vector<ParameterKey>                 params,
+                                 const std::function<Flags(Flags, const Node&)>& f)
     {
         traverse([&](const Flags oldFlags, const Node& node) {
             if (node.type == Node::Type::Message && node.formatType->category == category &&

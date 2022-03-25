@@ -34,13 +34,13 @@ namespace lal
 
         Node(const Node&) = delete;
 
-        Node(Node&&);
+        Node(Node&&) noexcept;
 
         ~Node() noexcept;
 
         Node& operator=(const Node&) = delete;
 
-        Node& operator=(Node&&);
+        Node& operator=(Node&&) noexcept;
 
         ////////////////////////////////////////////////////////////////
         // Getters.

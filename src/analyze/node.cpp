@@ -18,11 +18,11 @@ namespace lal
 
     Node::Node() = default;
 
-    Node::Node(Node&&) = default;
+    Node::Node(Node&&) noexcept = default;
 
     Node::~Node() noexcept = default;
 
-    Node& Node::operator=(Node&&) = default;
+    Node& Node::operator=(Node&&) noexcept = default;
 
     ////////////////////////////////////////////////////////////////
     // Getters.

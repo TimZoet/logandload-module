@@ -62,19 +62,19 @@ namespace lal
          * \brief Filter stream nodes.
          * \param f Function to apply to stream nodes. First parameter is old flags. Second parameter is stream node. Third parameter is stream index. Returns new flags.
          */
-        void filterStream(std::function<Flags(Flags, const Node&, size_t)> f);
+        void filterStream(const std::function<Flags(Flags, const Node&, size_t)>& f);
 
         /**
          * \brief Filter message nodes by category.
          * \param f Function to apply to message nodes. First parameter is old flags. Second parameter is category. Returns new flags.
          */
-        void filterCategory(std::function<Flags(Flags, uint32_t)> f);
+        void filterCategory(const std::function<Flags(Flags, uint32_t)>& f);
 
         /**
          * \brief Filter region nodes.
          * \param f Function to apply to region nodes. First parameter is old flags. Second parameter is region node. Returns new flags.
          */
-        void filterRegion(std::function<Flags(Flags, const Node&)> f);
+        void filterRegion(const std::function<Flags(Flags, const Node&)>& f);
 
         /**
          * \brief Filter message nodes that match combination of format type and parameter types.
@@ -83,7 +83,7 @@ namespace lal
          * \param f Function to apply to message nodes. First parameter is old flags. Second parameter is message node. Returns new flags.
          */
         template<typename F, typename... Ts>
-        requires(is_format_type<F, Ts...>) void filterMessage(std::function<Flags(Flags, const Node&)> f)
+        requires(is_format_type<F, Ts...>) void filterMessage(const std::function<Flags(Flags, const Node&)>& f)
         {
             const auto                messageHash = MessageKey{hashMessage(std::string(F::message))};
             std::vector<ParameterKey> params      = {hashParameter<Ts>()...};
@@ -127,10 +127,10 @@ namespace lal
         Tree& operator&=(const Tree& rhs);
 
     private:
-        void filterMessageImpl(MessageKey                               messageHash,
-                               uint32_t                                 category,
-                               std::vector<ParameterKey>                params,
-                               std::function<Flags(Flags, const Node&)> f);
+        void filterMessageImpl(MessageKey                                      messageHash,
+                               uint32_t                                        category,
+                               std::vector<ParameterKey>                       params,
+                               const std::function<Flags(Flags, const Node&)>& f);
 
         void traverse(std::function<Flags(Flags, const Node&)> f);
 

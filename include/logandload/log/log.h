@@ -453,7 +453,7 @@ namespace lal
 
         // Write number of streams.
         auto streamCount = streams.streams.size();
-        fmtFile.write(reinterpret_cast<const char*>(&streamCount), sizeof(streamCount));
+        fmtFile.write(reinterpret_cast<const char*>(&streamCount), sizeof streamCount);
 
         // Write message order setting.
         fmtFile << (Order == Ordering::Enabled ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0));
