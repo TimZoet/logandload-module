@@ -62,18 +62,48 @@ namespace lal
 
     void Tree::filterCategory(const std::function<Flags(Flags, uint32_t)>& f)
     {
-        traverse([&](const Flags oldFlags, const Node& node) {
-            if (node.type == Node::Type::Message) return f(oldFlags, node.formatType->category);
-            return oldFlags;
-        });
+        traverse(
+          [&](const Flags oldFlags, const Node& node) {
+              if (node.type == Node::Type::Message) return f(oldFlags, node.formatType->category);
+              return oldFlags;
+          },
+          [](const Flags flags, const Node&) {
+              return none(flags & Flags::Enabled) ? Action::Terminate : Action::Apply;
+          });
+    }
+
+    void Tree::filterCategory(const std::function<Flags(Flags, uint32_t)>&     f,
+                              const std::function<Action(Flags, const Node&)>& fAction)
+    {
+        traverse(
+          [&](const Flags oldFlags, const Node& node) {
+              if (node.type == Node::Type::Message) return f(oldFlags, node.formatType->category);
+              return oldFlags;
+          },
+          fAction);
     }
 
     void Tree::filterRegion(const std::function<Flags(Flags, const Node&)>& f)
     {
-        traverse([&](const Flags oldFlags, const Node& node) {
-            if (node.type == Node::Type::Region) return f(oldFlags, node);
-            return oldFlags;
-        });
+        traverse(
+          [&](const Flags oldFlags, const Node& node) {
+              if (node.type == Node::Type::Region) return f(oldFlags, node);
+              return oldFlags;
+          },
+          [](const Flags flags, const Node&) {
+              return none(flags & Flags::Enabled) ? Action::Terminate : Action::Apply;
+          });
+    }
+
+    void Tree::filterRegion(const std::function<Flags(Flags, const Node&)>&  f,
+                            const std::function<Action(Flags, const Node&)>& fAction)
+    {
+        traverse(
+          [&](const Flags oldFlags, const Node& node) {
+              if (node.type == Node::Type::Region) return f(oldFlags, node);
+              return oldFlags;
+          },
+          fAction);
     }
 
     void Tree::filterMessageImpl(const MessageKey                                messageHash,
@@ -81,15 +111,36 @@ namespace lal
                                  const std::vector<ParameterKey>                 params,
                                  const std::function<Flags(Flags, const Node&)>& f)
     {
-        traverse([&](const Flags oldFlags, const Node& node) {
-            if (node.type == Node::Type::Message && node.formatType->category == category &&
-                node.formatType->messageHash == messageHash && node.formatType->matches(params))
-                return f(oldFlags, node);
-            return oldFlags;
-        });
+        traverse(
+          [&](const Flags oldFlags, const Node& node) {
+              if (node.type == Node::Type::Message && node.formatType->category == category &&
+                  node.formatType->messageHash == messageHash && node.formatType->matches(params))
+                  return f(oldFlags, node);
+              return oldFlags;
+          },
+          [](const Flags flags, const Node&) {
+              return none(flags & Flags::Enabled) ? Action::Terminate : Action::Apply;
+          });
     }
 
-    void Tree::traverse(std::function<Flags(Flags, const Node&)> f)
+    void Tree::filterMessageImpl(const MessageKey                                 messageHash,
+                                 const uint32_t                                   category,
+                                 const std::vector<ParameterKey>                  params,
+                                 const std::function<Flags(Flags, const Node&)>&  f,
+                                 const std::function<Action(Flags, const Node&)>& fAction)
+    {
+        traverse(
+          [&](const Flags oldFlags, const Node& node) {
+              if (node.type == Node::Type::Message && node.formatType->category == category &&
+                  node.formatType->messageHash == messageHash && node.formatType->matches(params))
+                  return f(oldFlags, node);
+              return oldFlags;
+          },
+          fAction);
+    }
+
+    void Tree::traverse(const std::function<Flags(Flags, const Node&)>&  f,
+                        const std::function<Action(Flags, const Node&)>& fAction)
     {
         const Node* activeNode   = &analyzer->getNodes()[0];
         const Node* previousNode = nullptr;
@@ -114,19 +165,20 @@ namespace lal
                 continue;
             }
 
-            const auto index = activeNode->getIndex(*analyzer);
-            const auto flag  = nodes[index];
+            const auto index  = activeNode->getIndex(*analyzer);
+            const auto flag   = nodes[index];
+            const auto action = fAction(flag, *activeNode);
+
+            // Apply function.
+            if (any(action & Action::Apply)) nodes[index] = f(flag, *activeNode);
 
             // Terminate, traverse back to parent.
-            if (none(flag & Flags::Enabled))
+            if (any(action & Action::Terminate))
             {
                 previousNode = activeNode;
                 activeNode   = activeNode->parent;
                 continue;
             }
-
-            // Apply function.
-            nodes[index] = f(flag, analyzer->getNodes()[index]);
 
             // Traverse to first child.
             if (activeNode->childCount)
@@ -136,7 +188,7 @@ namespace lal
                 continue;
             }
 
-            // Traverse back to parent.
+            // No children, traverse back to parent.
             previousNode = activeNode;
             activeNode   = activeNode->parent;
         }
